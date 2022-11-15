@@ -43,9 +43,9 @@ class AdminUser extends Authenticatable
         'tel'
     ];
 
-    public function users(){
-        return $this->hasMany(User::class);
-    }
+    // public function users(){
+    //     return $this->hasMany(User::class);
+    // }
 
     public function companies(){
         return $this->hasMany(Company::class);

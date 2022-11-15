@@ -22,17 +22,18 @@ return new class extends Migration
             $table->string('tel')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role',['USER','GERANT','CAISSIER'])->default('USER');
+            $table->enum('role', ['USER', 'GERANT', 'CAISSIER'])->default('USER');
             $table->boolean('active')->default(false);
 
             $table->foreignId('company_id')
                 ->constrained()
                 ->onDelete('cascade');
 
-            $table->foreignId('admin_user_id')
-                ->constrained()
-                ->onDelete('cascade');
-                
+            // $table->foreignId('admin_user_id')
+            //     ->nullable()
+            //     ->constrained()
+            //     ->onDelete('cascade');
+
             $table->rememberToken();
             $table->timestamps();
         });

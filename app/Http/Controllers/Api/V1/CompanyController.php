@@ -198,9 +198,18 @@ class CompanyController extends Controller
      * @param  \App\Models\Company  $company
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Company $company)
+    public function destroy(Request $request, Company $company)
     {
-        // 
+        if (!$request->user()->hasRole('admin')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
 
+        $company->delete();
+
+        return response([
+            'message' => 'L’entreprise a bien été supprimé            '
+        ], 201);
     }
 }

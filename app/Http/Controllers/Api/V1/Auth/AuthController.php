@@ -30,18 +30,22 @@ class AuthController extends Controller
             ]);
         }
 
-        $user = User::create([
+        $user = AdminUser::create([
             'firstname' => $request->firstname,
             'lastname'  => $request->lastname,
             'email'     => $request->email,
-            'password'  => Hash::make($request->password)
+            'password'  => Hash::make($request->password),
         ]);
+
+        $user->attachRole('admin');
 
         $token = $user->createToken('M2mwMYQ91JKNfw610oK53ze5uFJ8LocsInqzZL')->plainTextToken;
 
         $response = [
-            'user'  => User::findOrFail($user->id),
-            'token' => $token
+            'user'  => AdminUser::findOrFail($user->id),
+            'token' => $token,
+            'roles' => $this->getTabName($user->roles->toArray()),
+            'prermissions' => $this->getTabName($user->allPermissions()->toArray())
         ];
 
         return response($response, 201);

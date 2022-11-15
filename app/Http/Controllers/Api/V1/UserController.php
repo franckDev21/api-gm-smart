@@ -45,7 +45,7 @@ class UserController extends Controller
             ], 403);
         }
 
-        return AdminUser::with(['users', 'companies'])->latest()->get();
+        return AdminUser::with(['companies'])->latest()->get();
     }
 
     public function getAdminUser(Request $request, AdminUser $adminUser)
@@ -56,14 +56,16 @@ class UserController extends Controller
             ], 403);
         }
 
-        return AdminUser::where('id', $adminUser->id)->with(['users', 'companies'])->first();
+        return AdminUser::where('id', $adminUser->id)->with(['companies'])->first();
     }
 
 
     public function dashboard(Request $request)
     {
 
-        $totalUser = $request->user()->company_id ? User::where('company_id', $request->user()->company_id)->count() : ($request->user()->role === 'SUPER' ? User::where('role', 'ENTREPRISE')->count() : 0);
+        $totalUser = User::where('company_id', $request->user()->company_id)
+            ->where('id', '!=', $request->user()->id)
+            ->get()->count();
 
         $caisse = TotalCash::where('company_id', $request->user()->company_id)->first();
         if (!$caisse) {
@@ -95,7 +97,14 @@ class UserController extends Controller
                 'error' => 'No'
             ], 403);
         }
-        $totalUsers =  User::where('admin_user_id', $request->user()->id)->count();
+        // $totalUsers =  User::where('admin_user_id', $request->user()->id)->count();
+
+        $totalUsers = 0;
+
+        $companiesUser = Company::with('users')->where('admin_user_id', $request->user()->id)->get();
+        foreach ($companiesUser as $c) {
+            $totalUsers += count($c->users);
+        }
         $totalCompany =  Company::where('admin_user_id', $request->user()->id)->count();
 
         return response([
@@ -117,7 +126,12 @@ class UserController extends Controller
 
     public function dashboardCompany(Request $request, Company $company)
     {
-        $totalUser =  Company::with(['users'])->first()->users->count();
+        $totalUser = 0;
+
+        $companiesUser = Company::with('users')->where('id', $company->id)->get();
+        foreach ($companiesUser as $c) {
+            $totalUser += count($c->users);
+        }
 
         $caisse = TotalCash::where('company_id', $company->id)->first();
         if (!$caisse) {
@@ -144,13 +158,52 @@ class UserController extends Controller
 
     public function getUsers(Request $request)
     {
-        return UserResource::collection(
-            User::with(['company','roles'])
-                ->where('role', 'USER')
-                ->where('admin_user_id', $request->user()->id)
-                ->where('id', '!=', $request->user()->id)
-                ->get()
-        );
+        if (!$request->user()->hasRole('gerant') && !$request->user()->hasRole('admin')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
+
+        if (!$request->user()->hasRole('admin')) {
+            $userTabls = [];
+            $companiesUser = Company::with('users')
+                ->where('id', $request->user()->company_id)->get();
+            foreach ($companiesUser as $c) {
+                foreach ($c->users as $user) {
+                    if ($user->id !== $request->user()->id) {
+                        $user->roles;
+                        $userTabls[] = $user;
+                    }
+                }
+            }
+
+            return $userTabls;
+            // return UserResource::collection(
+            //     User::with(['company', 'roles'])
+            //         ->where('admin_user_id', $request->user()->id)
+            //         ->where('id', $request->user()->id)
+            //         ->get()
+            // );
+        } else {
+            $userTabls = [];
+            $companiesUser = Company::with('users')->where('admin_user_id', $request->user()->id)->get();
+            foreach ($companiesUser as $c) {
+                foreach ($c->users as $user) {
+                    $user->roles;
+                    $userTabls[] = $user;
+                }
+            }
+
+            return $userTabls;
+
+            // return UserResource::collection(
+            //     User::with(['company', 'roles'])
+            //         ->where('role', 'USER')
+            //         ->where('admin_user_id', $request->user()->id)
+            //         ->where('id', '!=', $request->user()->id)
+            //         ->get()
+            // );
+        }
     }
 
     public function updateUserInfo(Request $request)
@@ -239,7 +292,7 @@ class UserController extends Controller
      */
     public function store(Request $request, Company $company)
     {
-        if (!$request->user()->hasRole('admin') && !$request->user()->hasRole('super')) {
+        if (!$request->user()->hasRole('admin') && !$request->user()->hasRole('gerant')) {
             return response([
                 'error' => 'No'
             ], 403);
@@ -259,8 +312,7 @@ class UserController extends Controller
             'lastname'   => $request->lastname,
             'email'      => $request->email,
             'password'   => Hash::make($request->password),
-            'admin_user_id' => $request->user()->id,
-            'company_id' => $request->company_id,
+            'company_id' => $request->company_id ?? $request->user()->company_id,
             'active'     => $active,
         ]);
 
@@ -269,6 +321,8 @@ class UserController extends Controller
                 'caissier' : ($request->role === 'USER' ?
                     'user' : 'gerany'))
         ) ?? 'user';
+
+        $role = $role === 'gerant' ? 'user' : $role;
 
         $user->attachRole($role);
 
@@ -298,6 +352,8 @@ class UserController extends Controller
             'password'   => Hash::make($request->password),
             'active'     => $active,
         ]);
+
+        $user->attachRole('admin');
 
         Mail::to($request->email)
             ->send(new RegisterUserInfoMail($user, $request->password));

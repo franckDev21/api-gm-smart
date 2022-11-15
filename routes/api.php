@@ -29,6 +29,7 @@ Route::group(['prefix' => 'v1'], function () {
 
     // company
     Route::post('my/company/{adminUser}', [CompanyController::class, 'store']);
+    Route::delete('my/company/{company}', [CompanyController::class, 'destroy']);
     Route::post('my/company/logo/{company}', [CompanyController::class, 'storeLogo']);
 
     // base65
