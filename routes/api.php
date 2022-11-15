@@ -28,7 +28,7 @@ Route::group(['prefix' => 'v1'], function () {
     Route::post('contact', [UserController::class, 'contact']);
 
     // company
-    Route::post('my/company/{user}', [CompanyController::class, 'store']);
+    Route::post('my/company/{adminUser}', [CompanyController::class, 'store']);
     Route::post('my/company/logo/{company}', [CompanyController::class, 'storeLogo']);
 
     // base65
@@ -48,7 +48,8 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('admin-user/toggle-active/{adminUser}', [UserController::class, 'toggleActiveAdminUser']);
         Route::post('/admin/user/create',[UserController::class,'storeAdminUser']);
 
-        // company
+        // companies
+        Route::get('companies',[CompanyController::class,'allCompaniesOfAdmin']);
         Route::post('admin-user/toggle-active/company/{company}/{adminUser}', [CompanyController::class, 'toggleActiveCompany']);
 
         // users
@@ -58,6 +59,9 @@ Route::group(['prefix' => 'v1'], function () {
 
         // dashboard
         Route::get('/dashboard', [UserController::class, 'dashboard']);
+        Route::get('/dashboard/admin', [UserController::class, 'dashboardAdmin']);
+        Route::get('/dashboard/super',[UserController::class,'dashboardSuper']);
+        Route::get('/dashboard/company/{company}',[UserController::class,'dashboardCompany']);
 
         // custumers
         Route::get('customers', [CustomerController::class, 'index']);
@@ -110,11 +114,10 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('product-suppliers', [ProductSupplierController::class, 'store']);
         Route::delete('product-suppliers/{productSupplier}', [ProductSupplierController::class, 'destroy']);
 
-
-        Route::get('my/company', [CompanyController::class, 'myCompany']);
+        Route::get('my/company/{company}', [CompanyController::class, 'myCompany']);
         Route::post('my/company/picture/{company}', [CompanyController::class, 'updatePictureCompany']);
 
-        Route::post('my/company/{company}', [CompanyController::class, 'update']);
+        Route::post('my/company/update/{company}', [CompanyController::class, 'update']);
         Route::post('user/toggle-active/{user}', [UserController::class, 'toggleActiveUser']);
 
         // logout

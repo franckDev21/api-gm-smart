@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\CompanyResource;
 use App\Models\AdminUser;
 use App\Models\Company;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class CompanyController extends Controller
@@ -41,9 +40,20 @@ class CompanyController extends Controller
         ], 201);
     }
 
-    public function myCompany(Request $request)
+    public function allCompaniesOfAdmin(Request $request)
     {
-        return $request->user()->company;
+        if (!$request->user()->hasRole('admin')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
+
+        return Company::with(['users'])->where('admin_user_id', $request->user()->id)->get();
+    }
+
+    public function myCompany(Request $request, Company $company)
+    {
+        return $company;
     }
 
     public function updatePictureCompany(Request $request, Company $company)
@@ -63,7 +73,7 @@ class CompanyController extends Controller
         ]);
 
         return response([
-            'message' => 'The lego of your company has been successfully updated',
+            'message' => 'Le lego de votre entreprise a été mis à jour avec succès',
             'path'    => $path
         ], 201);
     }
@@ -74,8 +84,9 @@ class CompanyController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request, User $user)
+    public function store(Request $request, AdminUser $adminUser)
     {
+
 
         // we check if it is the user's company
         $rules = [
@@ -101,15 +112,12 @@ class CompanyController extends Controller
 
         $data = $request->validate($rules);
 
-        $company = Company::create($data);
-
-        $user->update([
-            'as_company' => true,
-            'company_id' => $company->id
-        ]);
+        $company = Company::create(array_merge([
+            'admin_user_id' => $adminUser->id
+        ], $data));
 
         return response([
-            'message' => 'Your company has been successfully created ',
+            'message' => 'Votre entreprise a été créée avec succès',
             'company_id' => $company->id
         ], 201);
     }
@@ -180,7 +188,7 @@ class CompanyController extends Controller
         $company->update($data);
 
         return response([
-            'message' => 'The information of your company has been successfully updated'
+            'message' => 'Les informations de votre entreprise ont été mises à jour avec succès'
         ], 201);
     }
 

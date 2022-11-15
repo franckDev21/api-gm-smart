@@ -18,6 +18,7 @@ use App\Imports\ImportUser;
 use App\Exports\ExportUser;
 use App\Imports\ImportProduct;
 use App\Models\AdminUser;
+use App\Models\Company;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -47,14 +48,15 @@ class UserController extends Controller
         return AdminUser::with(['users', 'companies'])->latest()->get();
     }
 
-    public function getAdminUser(Request $request,AdminUser $adminUser){
+    public function getAdminUser(Request $request, AdminUser $adminUser)
+    {
         if (!$request->user()->hasRole('super')) {
             return response([
                 'error' => 'No'
             ], 403);
         }
 
-        return AdminUser::where('id',$adminUser->id)->with(['users', 'companies'])->first();
+        return AdminUser::where('id', $adminUser->id)->with(['users', 'companies'])->first();
     }
 
 
@@ -86,12 +88,66 @@ class UserController extends Controller
         ], 201);
     }
 
+    public function dashboardAdmin(Request $request)
+    {
+        if (!$request->user()->hasRole('admin')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
+        $totalUsers =  User::where('admin_user_id', $request->user()->id)->count();
+        $totalCompany =  Company::where('admin_user_id', $request->user()->id)->count();
+
+        return response([
+            'totalCompany' => $totalCompany,
+            'totalUsers' => $totalUsers,
+        ], 201);
+    }
+
+    public function dashboardSuper(Request $request)
+    {
+        if (!$request->user()->hasRole('super')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
+
+        return AdminUser::all()->count();
+    }
+
+    public function dashboardCompany(Request $request, Company $company)
+    {
+        $totalUser =  Company::with(['users'])->first()->users->count();
+
+        $caisse = TotalCash::where('company_id', $company->id)->first();
+        if (!$caisse) {
+            $caisse = TotalCash::create([
+                'montant' => 0,
+                'company_id' => $company->id
+            ]);
+        }
+
+        $totalCash = TotalCash::where('company_id', $company->id)->first()->montant;
+
+        $totalCustomer = Customer::where('company_id', $company->id)->count();
+        $totalOrder = Order::where('company_id', $company->id)->count();
+        $totalProduct = Product::where('company_id', $company->id)->count();
+
+        return response([
+            'totalCash' => $totalCash,
+            'totalCustomer' => $totalCustomer,
+            'totalProduct' => $totalProduct,
+            'totalUser' => $totalUser,
+            'totalOrder' => $totalOrder
+        ], 201);
+    }
+
     public function getUsers(Request $request)
     {
         return UserResource::collection(
-            User::with('company')
+            User::with(['company','roles'])
                 ->where('role', 'USER')
-                ->where('company_id', $request->user()->company_id)
+                ->where('admin_user_id', $request->user()->id)
                 ->where('id', '!=', $request->user()->id)
                 ->get()
         );
@@ -149,7 +205,8 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function toggleActiveAdminUser(AdminUser $adminUser){
+    public function toggleActiveAdminUser(AdminUser $adminUser)
+    {
         $adminUser->update([
             'active' => !$adminUser->active
         ]);
@@ -170,7 +227,7 @@ class UserController extends Controller
         $res = $user->active ? 'activé ' : 'désactivé';
 
         return response([
-            'message' => "Cette entreprise a bien été {$res}"
+            'message' => "Cette utilisateur a bien été {$res}"
         ], 201);
     }
 
@@ -180,8 +237,13 @@ class UserController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, Company $company)
     {
+        if (!$request->user()->hasRole('admin') && !$request->user()->hasRole('super')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
 
         $request->validate([
             'firstname' => 'required|string|min:2|max:250',
@@ -197,10 +259,18 @@ class UserController extends Controller
             'lastname'   => $request->lastname,
             'email'      => $request->email,
             'password'   => Hash::make($request->password),
-            'company_id' => $request->user()->role === 'SUPER' ? null : $request->user()->company_id,
+            'admin_user_id' => $request->user()->id,
+            'company_id' => $request->company_id,
             'active'     => $active,
-            'role'       => $request->user()->role === 'SUPER' ? 'ENTREPRISE' : 'USER'
         ]);
+
+        $role = ($request->role === 'GERANT' ?
+            'gerant' : ($request->role === 'CAISSIER' ?
+                'caissier' : ($request->role === 'USER' ?
+                    'user' : 'gerany'))
+        ) ?? 'user';
+
+        $user->attachRole($role);
 
         Mail::to($request->email)
             ->send(new RegisterUserInfoMail($user, $request->password));
@@ -210,7 +280,8 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function storeAdminUser(Request $request){
+    public function storeAdminUser(Request $request)
+    {
         $request->validate([
             'firstname' => 'required|string|min:2|max:250',
             'lastname' => 'required|string|min:2|max:250',
@@ -287,7 +358,7 @@ class UserController extends Controller
             'message' => "L'administrateur '{$adminUser->firstname} {$adminUser->lastname}'  a été supprimé avec succès !"
         ], 201);
     }
- 
+
     public function contact(Request $request)
     {
         Mail::to('tiomelafranck724@gmail.com')
@@ -295,7 +366,7 @@ class UserController extends Controller
                 'email' => $request->email,
                 'name' => $request->name,
                 'tel' => $request->tel,
-                'content' => $request->content, 
+                'content' => $request->content,
             ]));
 
         return response([

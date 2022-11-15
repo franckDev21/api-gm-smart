@@ -53,11 +53,13 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function company(){
+    public function company()
+    {
         return $this->belongsTo(Company::class);
     }
 
-    public function adminUser(){
+    public function adminUser()
+    {
         return $this->belongsTo(AdminUser::class);
     }
 }
