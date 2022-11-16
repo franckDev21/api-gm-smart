@@ -50,7 +50,7 @@ class AuthController extends Controller
 
         return response($response, 201);
     }
-
+ 
     private function getTabName(array $tabs)
     {
         $newTab = [];
