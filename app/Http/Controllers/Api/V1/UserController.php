@@ -19,6 +19,7 @@ use App\Exports\ExportUser;
 use App\Imports\ImportProduct;
 use App\Models\AdminUser;
 use App\Models\Company;
+use App\Models\SuperUser;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -62,24 +63,25 @@ class UserController extends Controller
 
     public function dashboard(Request $request)
     {
-
-        $totalUser = User::where('company_id', $request->user()->company_id)
+        $id = $request->id ?? $request->user()->company_id;
+        
+        $totalUser = User::where('company_id',$id)
             ->where('id', '!=', $request->user()->id)
             ->get()->count();
 
-        $caisse = TotalCash::where('company_id', $request->user()->company_id)->first();
+        $caisse = TotalCash::where('company_id',$id)->first();
         if (!$caisse) {
             $caisse = TotalCash::create([
                 'montant' => 0,
-                'company_id' => $request->user()->company_id
+                'company_id' =>$id
             ]);
         }
 
-        $totalCash = $request->user()->company_id ? TotalCash::where('company_id', $request->user()->company_id)->first()->montant : 0;
+        $totalCash =$id ? TotalCash::where('company_id',$id)->first()->montant : 0;
 
-        $totalCustomer =  $request->user()->company_id ?  Customer::where('company_id', $request->user()->company_id)->count() : 0;
-        $totalOrder =  $request->user()->company_id ?  Order::where('company_id', $request->user()->company_id)->count() : 0;
-        $totalProduct =  $request->user()->company_id ?  Product::where('company_id', $request->user()->company_id)->count() : 0;
+        $totalCustomer = $id ?  Customer::where('company_id',$id)->count() : 0;
+        $totalOrder = $id ?  Order::where('company_id',$id)->count() : 0;
+        $totalProduct = $id ?  Product::where('company_id',$id)->count() : 0;
 
         return response([
             'totalCash' => $totalCash,
@@ -214,13 +216,29 @@ class UserController extends Controller
             'email' => 'required|email',
         ]);
 
-        $request->user()->update([
-            'firstname' => $request->firstname,
-            'lastname' => $request->lastname,
-            'email' => $request->email,
-        ]);
+        if($request->user()->hasRole('super')){
+            $user = SuperUser::findOrFail($request->user()->id);
+            $user->update([
+                'firstname' => $request->firstname,
+                'lastname' => $request->lastname,
+                'email' => $request->email,
+            ]);
+        }elseif($request->user()->hasRole('admin')){
+            $user = AdminUser::findOrFail($request->user()->id);
+            $user->update([
+                'firstname' => $request->firstname,
+                'lastname' => $request->lastname,
+                'email' => $request->email,
+            ]);
+        }else{
+            $request->user()->update([
+                'firstname' => $request->firstname,
+                'lastname' => $request->lastname,
+                'email' => $request->email,
+            ]);
+            $user = User::findOrFail($request->user()->id);
+        }
 
-        $user = User::findOrFail($request->user()->id);
 
         return response($user, 201);
     }
@@ -240,9 +258,21 @@ class UserController extends Controller
         ]);
 
         return response([
-            'message' => 'Your profile picture has been successfully updated ! ',
-            'path'    => $path
+            'message' => 'Votre photo de profil a été mise à jour avec succès ! ',
+            'path'    => $path,
+            'roles' => $this->getTabName($request->user()->roles->toArray()),
+            'prermissions' => $this->getTabName($request->user()->allPermissions()->toArray())
         ], 201);
+    }
+
+    public function getTabName(array $tabs)
+    {
+        $newTab = [];
+        foreach ($tabs as $tab) {
+            $newTab[] = $tab['name'];
+        }
+
+        return $newTab;
     }
 
     public function toggleActiveUserCompany(User $user)
@@ -314,6 +344,8 @@ class UserController extends Controller
             'password'   => Hash::make($request->password),
             'company_id' => $request->company_id ?? $request->user()->company_id,
             'active'     => $active,
+            'tel'        => $request->tel ?? null,
+            'role'       => $request->role
         ]);
 
         $role = ($request->role === 'GERANT' ?
@@ -322,7 +354,7 @@ class UserController extends Controller
                     'user' : 'gerany'))
         ) ?? 'user';
 
-        $role = $role === 'gerant' ? 'user' : $role;
+        $role = $request->user()->hasRole('gerant') ? ($role === 'gerant' ? 'user' : $role) : $role;
 
         $user->attachRole($role);
 
@@ -340,7 +372,8 @@ class UserController extends Controller
             'firstname' => 'required|string|min:2|max:250',
             'lastname' => 'required|string|min:2|max:250',
             'email' => 'required|string|min:2|max:250|email|unique:admin_users',
-            'password' => 'required|string|confirmed'
+            'password' => 'required|string|confirmed',
+            'tel'     => 'required'
         ]);
 
         $active = $request->active ? true : false;
@@ -351,6 +384,7 @@ class UserController extends Controller
             'email'      => $request->email,
             'password'   => Hash::make($request->password),
             'active'     => $active,
+            'tel'        => $request->tel
         ]);
 
         $user->attachRole('admin');
@@ -360,6 +394,35 @@ class UserController extends Controller
 
         return response([
             'message' => 'Votre administrateur a été crée avec succès !'
+        ], 201);
+    }
+
+    public function updateAdminUser(Request $request, AdminUser $adminUser)
+    {
+        $request->validate([
+            'firstname' => 'required|string|min:2|max:250',
+            'lastname' => 'required|string|min:2|max:250',
+            'email' => 'required|string|min:2|max:250|email',
+            'password' => 'required|string|confirmed',
+            'tel'     => 'required'
+        ]);
+
+        $active = $request->active ? true : false;
+
+        $adminUser->update([
+            'firstname'  => $request->firstname,
+            'lastname'   => $request->lastname,
+            'email'      => $request->email,
+            'password'   => Hash::make($request->password),
+            'active'     => $active,
+            'tel'        => $request->tel
+        ]);
+
+        Mail::to($request->email)
+            ->send(new RegisterUserInfoMail($adminUser, $request->password));
+
+        return response([
+            'message' => 'Votre administrateur a été mis à jour avec succès !'
         ], 201);
     }
 
@@ -383,7 +446,56 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
-        //
+        if (!$request->user()->hasRole('admin') && !$request->user()->hasRole('gerant')) {
+            return response([
+                'error' => 'No'
+            ], 403);
+        }
+
+        $request->validate([
+            'firstname' => 'required|string|min:2|max:250',
+            'lastname' => 'required|string|min:2|max:250',
+            'email' => 'required|string|min:2|max:250|email',
+            'password' => 'required|string|confirmed'
+        ]);
+
+        $active = $request->active ? true : false;
+
+        $user->update([
+            'firstname'  => $request->firstname,
+            'lastname'   => $request->lastname,
+            'email'      => $request->email,
+            'password'   => Hash::make($request->password),
+            'company_id' => $request->company_id ?? $request->user()->company_id,
+            'active'     => $active,
+            'tel'        => $request->tel ?? null,
+            'role'       => $request->role
+        ]);
+
+        $role = ($request->role === 'GERANT' ?
+            'gerant' : ($request->role === 'CAISSIER' ?
+                'caissier' : ($request->role === 'USER' ?
+                    'user' : 'gerant'))
+        ) ?? 'user';
+
+        $role = $request->user()->hasRole('gerant') ? ($role === 'gerant' ? 'user' : $role) : $role;
+
+        $roles = $this->getTabName($user->roles->toArray());
+
+        $user->detachRoles($roles);
+        
+        foreach($roles as $r){
+            $user->detachRole($r);
+        }
+        
+        $user->attachRole($role);
+
+        Mail::to($request->email)
+            ->send(new RegisterUserInfoMail($user, $request->password));
+
+        return response([
+            'message' => 'Votre utilisateur a été mis à jour avec succès !'
+        ], 201);
     }
 
     /**

@@ -195,7 +195,7 @@ class OrderController extends Controller
 
         if($order->etat === 'PAYER'){
             return response([
-                'error' => "This order has already been paid"
+                'error' => "Cette commande a déjà été payé !"
             ]);
         }
 

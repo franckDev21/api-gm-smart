@@ -90,7 +90,7 @@ class CompanyController extends Controller
 
         // we check if it is the user's company
         $rules = [
-            'name' => 'required',
+            'name' => 'required|unique:companies',
             'address' => 'required',
             'country' => 'required',
             'city' => 'required',

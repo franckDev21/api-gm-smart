@@ -51,9 +51,10 @@ class AuthController extends Controller
         return response($response, 201);
     }
  
-    private function getTabName(array $tabs)
+    public function getTabName(array $tabs)
     {
         $newTab = [];
+
         foreach ($tabs as $tab) {
             $newTab[] = $tab['name'];
         }
@@ -148,7 +149,7 @@ class AuthController extends Controller
         ]);
 
         return response([
-            'message' => 'Your password has been successfully updated'
+            'message' => 'Votre mot de passe a été mis à jour avec succès'
         ], 201);
     }
 

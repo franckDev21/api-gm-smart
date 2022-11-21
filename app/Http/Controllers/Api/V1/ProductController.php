@@ -210,7 +210,7 @@ class ProductController extends Controller
     {
 
         $rules = [
-            'name' => 'required|max:100|min:1',
+            'name' => 'required|min:1',
             'prix_unitaire' => 'required',
             'type_approvisionnement' => 'required',
             'qte_stock_alert' => 'required',
@@ -224,7 +224,7 @@ class ProductController extends Controller
         }
 
         if($request->description){
-            $rules['description'] = 'sometimes|string|min:1|max:255';
+            $rules['description'] = 'sometimes|string|min:1';
         }
 
         if($request->nbre_par_carton){
@@ -246,12 +246,14 @@ class ProductController extends Controller
 
         $data['image'] = $path ?? null;
 
-        Product::create(array_merge([
+        $product =  Product::create(array_merge([
             'company_id' => $request->user()->company_id,
         ],$data));
 
         return response([
-            'message' => "Votre produit a bien été ajouté avec succès !            "
+            'message' => "Votre produit a bien été ajouté avec succès !",
+            'product_id' => $product->id,
+            'product_name' =>$product->name
         ],201);
     }
 
@@ -276,7 +278,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $rules = [
-            'name' => 'required|max:100|min:1',
+            'name' => 'required|min:1',
             'prix_unitaire' => 'required',
             'type_approvisionnement' => 'required',
             'qte_stock_alert' => 'required',
@@ -290,7 +292,7 @@ class ProductController extends Controller
         }
 
         if($request->description){
-            $rules['description'] = 'sometimes|string|min:1|max:255';
+            $rules['description'] = 'sometimes|string|min:1';
         }
 
         if($request->nbre_par_carton){

@@ -46,8 +46,10 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get('admins', [UserController::class, 'getAdminUsers']);
         Route::get('admins/{adminUser}', [UserController::class, 'getAdminUser']);
         Route::delete('admins/{adminUser}', [UserController::class, 'deleteAdminUser']);
+        Route::post('admins/{adminUser}/update', [UserController::class, 'updateAdminUser']);
         Route::post('admin-user/toggle-active/{adminUser}', [UserController::class, 'toggleActiveAdminUser']);
         Route::post('/admin/user/create',[UserController::class,'storeAdminUser']);
+        // 
 
         // companies
         Route::get('companies',[CompanyController::class,'allCompaniesOfAdmin']);
@@ -55,6 +57,8 @@ Route::group(['prefix' => 'v1'], function () {
 
         // users
         Route::get('users/companies', [UserController::class, 'index']);
+        Route::get('users/{user}', [UserController::class, 'show']);
+        Route::post('users/{user}/update', [UserController::class, 'update']);
         Route::delete('users/companies/{user}', [UserController::class, 'deleteUserCompany']);
         Route::post('users/companies/toggle-active/{user}', [UserController::class, 'toggleActiveUserCompany']);
 

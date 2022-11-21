@@ -15,13 +15,13 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->longText('name');
             $table->string('qte_en_stock')->default(0);
             $table->string('qte_stock_alert')->nullable();
             $table->string('prix_unitaire');
             $table->string('image')->nullable();
             $table->string('type_approvisionnement');
-            $table->text('description')->nullable();
+            $table->longText('description')->nullable();
             $table->boolean('is_stock')->default(false);
 
             $table->string('unite_restante')->nullable();
