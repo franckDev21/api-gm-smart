@@ -23,9 +23,14 @@ class OrderController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Order::with(['orderProducts','customer','user'])->latest()->get();
+        $id = $request->id ?? $request->user()->company_id;
+
+        return Order::with(['orderProducts','customer','user'])
+            ->where('company_id',$id)
+            ->latest()
+            ->get();
     }
 
     /**
@@ -36,8 +41,8 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {        
-        // return $request->all();
-
+        $id = $request->id ?? $request->user()->company_id;
+        
         // on creer la commande
         $commande = Order::create([
             'reference' => time(),
@@ -47,7 +52,7 @@ class OrderController extends Controller
             'customer_id' => $request->client,
             'user_id'   => $request->user()->id,
             'etat'      => 'IMPAYER',
-            'company_id' => $request->user()->company_id,
+            'company_id' => $id,
             'as_taxe' => $request->taxe === 'TVA' || $request->taxe === 'IR',
             'total_ht' => $request->total_ht
         ]);
@@ -56,7 +61,7 @@ class OrderController extends Controller
         Invoice::create([
             'customer_id'     => $request->client,
             'order_id'   => $commande->id,
-            'company_id' => $request->user()->company_id,
+            'company_id' => $id,
             'as_tva' => $request->taxe === 'TVA',
             'as_ir' => $request->taxe === 'IR',
             'reference' => Str::upper(Str::replace('...','',Str::limit(User::with(['company'])->where('id',$request->user()->id)->first()->company->name,3))).'-'.date('Y-m-d') ?? '0'
@@ -114,7 +119,7 @@ class OrderController extends Controller
 
             if ($newNbreUnites > 0) {                
                 // increment qte product
-                $product = Product::where('company_id',$request->user()->company_id)->find($cart->id);
+                $product = Product::where('company_id',$id)->find($cart->id);
 
                 if($cart->type_de_vente === 'PIECE'){
                     $totalResteEntiere = (int)$cart->qte_en_stock - (int)$cart->qte;
@@ -138,7 +143,7 @@ class OrderController extends Controller
                     'product_id'=> $cart->id,
                     'user_id'   => $request->user()->id,
                     'is_unite'  => true,
-                    'company_id' => $request->user()->company_id
+                    'company_id' => $id
                 ]);
 
             } else {

@@ -19,10 +19,12 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        if(!$request->user()->company_id) return [];
+        $id = $request->id ?? $request->user()->company_id;
+
+        if(!$id) return [];
         
         return Product::with(['productSupplier','category','ProductType'])
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->latest()->get();
     }
 
@@ -31,22 +33,34 @@ class ProductController extends Controller
     }
 
     public function getSuppliers(Request $request){
-        return ProductSupplier::where('company_id',$request->user()->company_id)->get();
+        $id = $request->id ?? $request->user()->company_id;
+        return ProductSupplier::where('company_id',$id)->get();
     }
 
     public function getAllHistory(Request $request){
+        $id = $request->id ?? $request->user()->company_id;
+
+        if(!$id) return [];
+
         return ProductHistory::with(['product','user'])
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->latest()->get();
     }
 
     public function getProcurement(Request $request){
+        $id = $request->id ?? $request->user()->company_id;
+
+        if(!$id) return [];
+        
         return Supply::with(['product','user'])
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->latest()->get();
     }
     
     public function addInput(Request $request,Product $product){
+
+        $id = $request->id ?? $request->user()->company_id;
+
         $request->validate([
             'quantite'   => 'required',
             'prix_achat'  => 'required'
@@ -73,7 +87,7 @@ class ProductController extends Controller
             'quantite'   => $request->quantite,
             'user_id'    => $request->user()->id,
             'is_unite'   => false,
-            'company_id' => $request->user()->company_id,
+            'company_id' => $id,
         ]);
 
         // new hitory
@@ -83,7 +97,7 @@ class ProductController extends Controller
             'motif'     => 'Approvisionnement',
             'product_id' => $product->id,
             'user_id'   => $request->user()->id,
-            'company_id' => $request->user()->company_id,
+            'company_id' => $id,
         ]);
 
         return response([
@@ -93,9 +107,11 @@ class ProductController extends Controller
     }
 
     public function addOutput(Request $request,Product $product){
+        $id = $request->id ?? $request->user()->company_id;
+        
         $product = Product::with(['productSupplier','category','productType'])
             ->where('id',$product->id)
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->first();
 
         $request->validate([
@@ -183,7 +199,7 @@ class ProductController extends Controller
                     'product_id' => $product->id,
                     'user_id'   => $request->user()->id,
                     'is_unite'  => $request->type === 'CARTON' ? false : true,
-                    'company_id' => $request->user()->company_id,
+                    'company_id' => $id,
                 ]);
 
                 return response([
@@ -208,6 +224,7 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $id = $request->id ?? $request->user()->company_id;
 
         $rules = [
             'name' => 'required|min:1',
@@ -247,7 +264,7 @@ class ProductController extends Controller
         $data['image'] = $path ?? null;
 
         $product =  Product::create(array_merge([
-            'company_id' => $request->user()->company_id,
+            'company_id' => $id,
         ],$data));
 
         return response([

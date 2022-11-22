@@ -15,7 +15,8 @@ class ProductSupplierController extends Controller
      */
     public function index(Request $request)
     {
-        return ProductSupplier::where('company_id',$request->user()->company_id)->get();
+        $id = $request->id ?? $request->user()->company_id;
+        return ProductSupplier::where('company_id', $id)->get();
     }
 
     /**
@@ -26,17 +27,19 @@ class ProductSupplierController extends Controller
      */
     public function store(Request $request)
     {
+        $id = $request->id ?? $request->user()->company_id;
+
         $rules = [
             'name' => 'required'
         ];
 
-        if($request->address){
+        if ($request->address) {
             $rules['address'] = 'required';
         }
-        if($request->tel){
+        if ($request->tel) {
             $rules['tel'] = 'required';
         }
-        if($request->email){
+        if ($request->email) {
             $rules['email'] = 'required';
         }
 
@@ -47,13 +50,12 @@ class ProductSupplierController extends Controller
             'address' => $request->address ?? null,
             'tel' => $request->tel ?? null,
             'email' => $request->email ?? null,
-            'company_id' => $request->user()->company_id
+            'company_id' => $id
         ]);
 
         return response([
             'message' => 'Votre fournisseur a été ajouté avec succès            '
-        ],201);
-
+        ], 201);
     }
 
     /**
@@ -85,13 +87,13 @@ class ProductSupplierController extends Controller
      * @param  \App\Models\ProductSupplier  $productSupplier
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Request $request,ProductSupplier $productSupplier)
+    public function destroy(Request $request, ProductSupplier $productSupplier)
     {
-        if($request->user()->company_id !== $productSupplier->company_id) return null;
-        
+        if ($request->user()->company_id !== $productSupplier->company_id) return null;
+
         $productSupplier->delete();
         return response([
             "message" => "Votre fournisseur a été supprimé avec succès !"
-        ],201);
+        ], 201);
     }
 }

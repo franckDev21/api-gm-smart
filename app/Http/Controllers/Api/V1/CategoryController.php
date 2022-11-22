@@ -15,7 +15,9 @@ class CategoryController extends Controller
      */
     public function index(Request $request)
     {
-        return Category::where('company_id',$request->user()->company_id)->get();
+        $id = $request->id ?? $request->user()->company_id;
+
+        return Category::where('company_id','=',$id)->get();
     }
 
     /**
@@ -26,19 +28,20 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
+        $id = $request->id ?? $request->user()->company_id;
+        
         $request->validate([
             'name' => 'required'
         ]);
 
         Category::create([
             'name' => $request->name,
-            'company_id' => $request->user()->company_id
+            'company_id' => $id
         ]);
 
         return response([
             'message' => 'Votre categorie a été ajouté avec succès !'
-        ],201);
-
+        ], 201);
     }
 
     /**
@@ -75,6 +78,6 @@ class CategoryController extends Controller
         $category->delete();
         return response([
             "message" => "Votre categorie a été supprimé avec succès "
-        ],201);
+        ], 201);
     }
 }

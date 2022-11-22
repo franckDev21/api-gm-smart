@@ -40,7 +40,8 @@ class AdminUser extends Authenticatable
         'password',
         'photo',
         'active',
-        'tel'
+        'tel',
+        'list_compamie_ids'
     ];
 
     // public function users(){

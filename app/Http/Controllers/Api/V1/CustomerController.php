@@ -16,8 +16,10 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
+        $id = $request->id ?? $request->user()->company_id;
+
         return CustomerResource::collection(Customer::with(['company','orders'])
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->get()
         );
     }
@@ -30,6 +32,7 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
+        $id = $request->id ?? $request->user()->company_id;
 
         $request->validate([
             'firstname' => 'required|min:2',
@@ -45,7 +48,7 @@ class CustomerController extends Controller
             'tel' => $request->tel ?? null,
             'address' => $request->address ?? null,
             'email' => $request->email ?? null,
-            'company_id' => $request->user()->company_id,
+            'company_id' => $id,
         ]);
 
         return response([
@@ -61,7 +64,9 @@ class CustomerController extends Controller
      */
     public function show(Request $request, Customer $customer)
     {
-        if($customer->company_id === $request->user()->company_id)
+        $id = $request->id ?? $request->user()->company_id;
+        
+        if($customer->company_id == $id)
             return response(CustomerResource::make($customer),201);
     }
 
@@ -73,13 +78,12 @@ class CustomerController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Customer $customer)
-    {
+    {        
         $request->validate([
             'firstname' => 'required|min:2',
             'lastname' => 'required|min:2',
             'tel' => 'sometimes|string:max:100',
             'address' => 'sometimes|max:100',
-            'email' => 'sometimes|email'
         ]);
 
         $customer->update([
@@ -87,7 +91,7 @@ class CustomerController extends Controller
             'lastname' => $request->lastname,
             'tel' => $request->tel,
             'address' => $request->address,
-            'email' => $request->email ,
+            'email' => $request->email ?? null ,
         ]);
 
         return response([

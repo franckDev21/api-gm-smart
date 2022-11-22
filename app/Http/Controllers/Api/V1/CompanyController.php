@@ -116,10 +116,41 @@ class CompanyController extends Controller
             'admin_user_id' => $adminUser->id
         ], $data));
 
+        $tabCompanyList = null;
+
+        if ($adminUser->list_compamie_ids) {
+            $tabCompanyList = explode('|', $adminUser->list_compamie_ids);
+            $tabCompanyList = array_merge($tabCompanyList, [$company->id]);
+            $tabCompanyList = implode('|', $tabCompanyList);
+        } else {
+            $tabCompanyList = [$company->id];
+            $tabCompanyList = implode('|', $tabCompanyList);
+        }
+
+        $adminUser->update([
+            'list_compamie_ids' => $tabCompanyList
+        ]);
+
+        $roles = $this->getTabName($adminUser->roles->toArray());
+        $prermissions = $this->getTabName($adminUser->allPermissions()->toArray());
+
         return response([
             'message' => 'Votre entreprise a été créée avec succès',
-            'company_id' => $company->id
+            'company_id' => $company->id,
+            'roles' => $roles,
+            'prermissions' => $prermissions,
+            'list_compamie_ids' =>  $tabCompanyList
         ], 201);
+    }
+
+    public function getTabName(array $tabs)
+    {
+        $newTab = [];
+        foreach ($tabs as $tab) {
+            $newTab[] = $tab['name'];
+        }
+
+        return $newTab;
     }
 
     public function storeLogo(Request $request, Company $company)
