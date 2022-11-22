@@ -65,10 +65,15 @@ class UserController extends Controller
     {
         $id = $request->id ?? $request->user()->company_id;
         
-        $totalUser = User::where('company_id',$id)
+        if($request->id){
+            $totalUser = User::where('company_id',$id)
+            ->get()->count();
+        }else{
+            $totalUser = User::where('company_id',$id)
             ->where('id', '!=', $request->user()->id)
             ->get()->count();
-
+        }
+        
         $caisse = TotalCash::where('company_id',$id)->first();
         if (!$caisse) {
             $caisse = TotalCash::create([

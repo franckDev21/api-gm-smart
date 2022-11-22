@@ -16,9 +16,11 @@ class InvoiceController extends Controller
      */
     public function index(Request $request)
     {
-        if($request->user()->company_id){
+        $id = $request->id ?? $request->user()->company_id;
+
+        if($id){
             return InvoiceResourve::collection(Invoice::with(['order','customer','company'])
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->latest()->get());
         }else{
             return ['data' => []];

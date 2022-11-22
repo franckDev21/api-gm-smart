@@ -198,6 +198,8 @@ class OrderController extends Controller
 
     public function payer(Request $request,Order $order){
 
+        $id = $request->id ?? $request->user()->company_id;
+
         if($order->etat === 'PAYER'){
             return response([
                 'error' => "Cette commande a déjà été payé !"
@@ -216,15 +218,15 @@ class OrderController extends Controller
             'montant' => (int)implode('',explode('.',$order->cout)),
             'order_id' => $order->id,
             'motif'   => 'Payment of the order',
-            'company_id'   => $request->user()->company_id,
+            'company_id'   => $id,
         ]);
 
-        $caisse = TotalCash::where('company_id',$request->user()->company_id)->first();
+        $caisse = TotalCash::where('company_id',$id)->first();
 
         if(!$caisse){
             $caisse = TotalCash::create([
                 'montant' => 0,
-                'company_id' => $request->user()->company_id
+                'company_id' => $id
             ]);
         }
 

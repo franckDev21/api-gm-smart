@@ -16,9 +16,11 @@ class CashierController extends Controller
      */
     public function index(Request $request)
     {
-        if($request->user()->company_id){
+        $id = $request->id ?? $request->user()->company_id;
+
+        if($id){
             return Cash::with(['order','user'])
-            ->where('company_id',$request->user()->company_id)
+            ->where('company_id',$id)
             ->latest()->get();
         }else{
             return [];
@@ -26,8 +28,10 @@ class CashierController extends Controller
     }
 
     public function getTotal(Request $request){
-        if($request->user()->company_id){
-            return TotalCash::where('company_id',$request->user()->company_id)->first();
+        $id = $request->id ?? $request->user()->company_id;
+
+        if($id){
+            return TotalCash::where('company_id',$id)->first();
         }else{
             return [];
         }
@@ -42,6 +46,8 @@ class CashierController extends Controller
      */
     public function store(Request $request)
     { 
+        $id = $request->id ?? $request->user()->company_id;
+
         $data = $request->validate([
             'montant' => 'required',
             'motif' => 'required',
@@ -51,51 +57,52 @@ class CashierController extends Controller
         Cash::create(array_merge([
             'user_id' => $request->user()->id,
             'type' => 'ENTRER',
-            'company_id' => $request->user()->company_id
+            'company_id' => $id
         ],$data));
 
-        $caisse = TotalCash::first();
+        $caisse = TotalCash::where('company_id',$id)->first();
 
         if(!$caisse){
             $caisse = TotalCash::create([
                 'montant' => 0,
-                'company_id' => $request->user()->company_id
+                'company_id' => $id
             ]);
         }
 
-        $total = $caisse->sum('montant');
+        $total = $caisse->montant;
 
         $caisse->update([
             'montant' => (int)$total + (int)$request->montant
         ]);
 
         return response([
-            "message" => "New entry registered!"
+            "message" => "Votre entrée a été enregistrée avec succès !"
         ],201);
     }
 
 
     public function output(Request $request){
         
+        $id = $request->id ?? $request->user()->company_id;
 
         $data = $request->validate([
             'montant' => 'required',
             'motif' => 'required',
         ]);
 
-        $caisses = TotalCash::while('company_id',$request->user()->company_id)->all();
+        $caisses = TotalCash::where('company_id',$id)->get();
         
         if(!$caisses->first()){
             TotalCash::create([
                 'montant' => 0,
-                'company_id' => $request->user()->company_id
+                'company_id' => $id
             ]);
         }
 
-        $total = $caisses->sum('montant');
+        $total = $caisses->first()->montant;
 
         if((int)$request->montant <= $total){
-            $caisse = TotalCash::first();
+            $caisse = TotalCash::where('company_id',$id)->first();
 
             $caisse->update([
                 'montant' => (int)$total - (int)$request->montant
@@ -104,11 +111,11 @@ class CashierController extends Controller
             Cash::create(array_merge([
                 'user_id' => auth()->user()->id,
                 'type'    => 'SORTIR',
-                'company_id' => $request->user()->company_id
+                'company_id' => $id
             ],$data));
     
             return response([
-                "message" => "New release recorded !"
+                "message" => "Votre sortie a été enregistré avec succès !"
             ],201);
 
         }else{
