@@ -56,6 +56,15 @@ class CompanyController extends Controller
         return $company;
     }
 
+    public function getCompany(Request $request,Company $company){
+
+        if($company->admin_user_id !== $request->user()->id){
+            return ['error'=>'Mouf ! salo'];
+        }
+
+        return $company;
+    }
+
     public function updatePictureCompany(Request $request, Company $company)
     {
         // we check if it is the user's company

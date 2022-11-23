@@ -119,6 +119,7 @@ Route::group(['prefix' => 'v1'], function () {
         Route::post('product-suppliers', [ProductSupplierController::class, 'store']);
         Route::delete('product-suppliers/{productSupplier}', [ProductSupplierController::class, 'destroy']);
 
+        Route::get('company/{company}', [CompanyController::class, 'getCompany']);
         Route::get('my/company/{company}', [CompanyController::class, 'myCompany']);
         Route::post('my/company/picture/{company}', [CompanyController::class, 'updatePictureCompany']);
 
