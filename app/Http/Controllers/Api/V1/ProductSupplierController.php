@@ -89,7 +89,9 @@ class ProductSupplierController extends Controller
      */
     public function destroy(Request $request, ProductSupplier $productSupplier)
     {
-        if ($request->user()->company_id !== $productSupplier->company_id) return null;
+        $id = $request->id ?? $request->user()->company_id;
+
+        if ((int)$id !== (int)$productSupplier->company_id) return null;
 
         $productSupplier->delete();
         return response([
