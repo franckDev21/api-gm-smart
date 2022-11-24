@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminUser;
+use App\Models\Company;
 use App\Models\SuperUser;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -101,6 +102,12 @@ class AuthController extends Controller
             $roles = $this->getTabName($user->roles->toArray());
             $token = $user->createToken('M2mwMYQ91JKfw5M2mwMYQM2mwMYQ91JKfw5uFocsInqzZL91JKfw5uFJ8LocsInqzZLuFJcsInqzZL')->plainTextToken;
             $prermissions = $this->getTabName($user->allPermissions()->toArray());
+
+            if(!Company::find($user->company_id)->active){
+                return response([
+                    'message' => 'Votre entreprise n’a pas encore été activé !'
+                ], 401);
+            }
         } else if ($adminUser) {
             $roles = $this->getTabName($adminUser->roles->toArray());
             $token = $adminUser->createToken('M2mwMYQ91JKfw5M2mwMYQM2mwMYQ91JKfw5uFocsInqzZL91JKfw5uFJ8LocsInqzZLuFJcsInqzZL')->plainTextToken;
