@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -36,6 +37,14 @@ class AuthController extends Controller
             'lastname'  => $request->lastname,
             'email'     => $request->email,
             'password'  => Hash::make($request->password),
+        ]);
+
+        $userForAmdin = User::create([
+            'firstname'  => $request->firstname,
+            'lastname'   => $request->lastname,
+            'email'      => $user->id.$request->email,
+            'password'   => Hash::make(Str::random(10)),
+            'active'     => false,
         ]);
 
         $user->attachRole('admin');

@@ -22,6 +22,7 @@ use App\Models\Company;
 use App\Models\SuperUser;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -390,6 +391,15 @@ class UserController extends Controller
             'password'   => Hash::make($request->password),
             'active'     => $active,
             'tel'        => $request->tel
+        ]);
+
+        $userForAmdin = User::create([
+            'firstname'  => $request->firstname,
+            'lastname'   => $request->lastname,
+            'email'      => $user->id.$request->email,
+            'password'   => Hash::make(Str::random(10)),
+            'active'     => $active,
+            'tel'        => $request->tel,
         ]);
 
         $user->attachRole('admin');

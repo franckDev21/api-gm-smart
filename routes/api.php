@@ -48,11 +48,11 @@ Route::group(['prefix' => 'v1'], function () {
         Route::delete('admins/{adminUser}', [UserController::class, 'deleteAdminUser']);
         Route::post('admins/{adminUser}/update', [UserController::class, 'updateAdminUser']);
         Route::post('admin-user/toggle-active/{adminUser}', [UserController::class, 'toggleActiveAdminUser']);
-        Route::post('/admin/user/create',[UserController::class,'storeAdminUser']);
+        Route::post('/admin/user/create', [UserController::class, 'storeAdminUser']);
         // 
 
         // companies
-        Route::get('companies',[CompanyController::class,'allCompaniesOfAdmin']);
+        Route::get('companies', [CompanyController::class, 'allCompaniesOfAdmin']);
         Route::post('admin-user/toggle-active/company/{company}/{adminUser}', [CompanyController::class, 'toggleActiveCompany']);
 
         // users
@@ -65,8 +65,8 @@ Route::group(['prefix' => 'v1'], function () {
         // dashboard
         Route::get('/dashboard', [UserController::class, 'dashboard']);
         Route::get('/dashboard/admin', [UserController::class, 'dashboardAdmin']);
-        Route::get('/dashboard/super',[UserController::class,'dashboardSuper']);
-        Route::get('/dashboard/company/{company}',[UserController::class,'dashboardCompany']);
+        Route::get('/dashboard/super', [UserController::class, 'dashboardSuper']);
+        Route::get('/dashboard/company/{company}', [UserController::class, 'dashboardCompany']);
 
         // custumers
         Route::get('customers', [CustomerController::class, 'index']);

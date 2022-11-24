@@ -8,6 +8,7 @@ use App\Models\ProductHistory;
 use App\Models\ProductSupplier;
 use App\Models\ProductType;
 use App\Models\Supply;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -61,6 +62,14 @@ class ProductController extends Controller
 
         $id = $request->id ?? $request->user()->company_id;
 
+        $userId = null;
+        if ($request->user()->hasRole('admin')){
+            $userId = User::where('email',$request->user()->id.$request->user()->email)->first()->id;
+        }else{
+            $userId = $request->user()->id;
+        }
+        
+
         $request->validate([
             'quantite'   => 'required',
             'prix_achat'  => 'required'
@@ -85,7 +94,7 @@ class ProductController extends Controller
             'product_id' => $product->id,
             'prix_achat' => $request->prix_achat,
             'quantite'   => $request->quantite,
-            'user_id'    => $request->user()->id,
+            'user_id'    => $userId,
             'is_unite'   => false,
             'company_id' => $id,
         ]);
@@ -96,7 +105,7 @@ class ProductController extends Controller
             'type'      => 'ENTRÉE',
             'motif'     => 'Approvisionnement',
             'product_id' => $product->id,
-            'user_id'   => $request->user()->id,
+            'user_id'   => $userId,
             'company_id' => $id,
         ]);
 
@@ -108,6 +117,13 @@ class ProductController extends Controller
 
     public function addOutput(Request $request,Product $product){
         $id = $request->id ?? $request->user()->company_id;
+
+        $userId = null;
+        if ($request->user()->hasRole('admin')){
+            $userId = User::where('email',$request->user()->id.$request->user()->email)->first()->id;
+        }else{
+            $userId = $request->user()->id;
+        }
         
         $product = Product::with(['productSupplier','category','productType'])
             ->where('id',$product->id)
@@ -163,7 +179,7 @@ class ProductController extends Controller
                     'type'      => 'SORTIE',
                     'motif'     => $request->motif,
                     'product_id' => $product->id,
-                    'user_id'   => $request->user()->id,
+                    'user_id'   => $userId,
                     'is_unite'  => $request->type === 'CARTON' ? false : true,
                     'company_id' => $request->user()->company_id,
                 ]);
@@ -197,7 +213,7 @@ class ProductController extends Controller
                     'type'      => 'SORTIE',
                     'motif'     => $request->motif,
                     'product_id' => $product->id,
-                    'user_id'   => $request->user()->id,
+                    'user_id'   => $userId,
                     'is_unite'  => $request->type === 'CARTON' ? false : true,
                     'company_id' => $id,
                 ]);

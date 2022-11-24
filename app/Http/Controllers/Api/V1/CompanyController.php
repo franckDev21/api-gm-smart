@@ -56,10 +56,11 @@ class CompanyController extends Controller
         return $company;
     }
 
-    public function getCompany(Request $request,Company $company){
+    public function getCompany(Request $request, Company $company)
+    {
 
-        if($company->admin_user_id !== $request->user()->id){
-            return ['error'=>'Mouf ! salo'];
+        if ($company->admin_user_id !== $request->user()->id) {
+            return ['error' => 'Mouf ! salo'];
         }
 
         return $company;
