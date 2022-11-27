@@ -44,7 +44,13 @@ class OrderController extends Controller
     {
         $id = $request->id ?? $request->user()->company_id;
 
-        $userForAdminInfo = User::where('email', $request->user()->id . $request->user()->email)->first();
+        $userForAdminInfo = null;
+
+        if ($request->user()->hasRole('admin')){
+            $userForAdminInfo = User::where('email', $request->user()->id . $request->user()->email)->first();
+        }else{
+            $userForAdminInfo = $request->user();
+        }
 
         $idUser = $userForAdminInfo->id ?? $request->user()->id;
 
@@ -63,7 +69,7 @@ class OrderController extends Controller
         ]);
 
         $companyName = '';
-        
+
         if ($request->user()->hasRole('admin')) {
             $companyName = Company::find($id)->name;
         } else {
