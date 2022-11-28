@@ -364,8 +364,8 @@ class UserController extends Controller
 
         $user->attachRole($role);
 
-        Mail::to($request->email)
-            ->send(new RegisterUserInfoMail($user, $request->password));
+        // Mail::to($request->email)
+        //     ->send(new RegisterUserInfoMail($user, $request->password));
 
         return response([
             'message' => 'Votre utilisateur a été crée avec succès !'
@@ -433,8 +433,8 @@ class UserController extends Controller
             'tel'        => $request->tel
         ]);
 
-        Mail::to($request->email)
-            ->send(new RegisterUserInfoMail($adminUser, $request->password));
+        // Mail::to($request->email)
+        //     ->send(new RegisterUserInfoMail($adminUser, $request->password));
 
         return response([
             'message' => 'Votre administrateur a été mis à jour avec succès !'
@@ -505,8 +505,8 @@ class UserController extends Controller
         
         $user->attachRole($role);
 
-        Mail::to($request->email)
-            ->send(new RegisterUserInfoMail($user, $request->password));
+        // Mail::to($request->email)
+        //     ->send(new RegisterUserInfoMail($user, $request->password));
 
         return response([
             'message' => 'Votre utilisateur a été mis à jour avec succès !'

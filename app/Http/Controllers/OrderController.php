@@ -164,7 +164,7 @@ class OrderController extends Controller
                     'motif'     => 'Commande',
                     'product_id' => $cart->id,
                     'user_id'   => $idUser,
-                    'is_unite'  => true,
+                    'is_unite'  => $cart->type_de_vente === "DETAIL",
                     'company_id' => $id
                 ]);
             } else {
@@ -240,7 +240,7 @@ class OrderController extends Controller
             'type' => 'ENTRER',
             'montant' => (int)implode('', explode('.', $order->cout)),
             'order_id' => $order->id,
-            'motif'   => 'Payment of the order',
+            'motif'   => 'Paiement de la command',
             'company_id'   => $id,
         ]);
 
@@ -267,9 +267,9 @@ class OrderController extends Controller
     public function invoice(Request $request, Order $order)
     {
 
-        $order->update([
-            'etat' => 'FACTURER'
-        ]);
+        // $order->update([
+        //     'etat' => 'FACTURER'
+        // ]);
 
         $order = Order::with(['customer', 'orderProducts', 'user', 'invoice'])->where('id', $order->id)->first();
 
