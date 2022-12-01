@@ -46,9 +46,9 @@ class OrderController extends Controller
 
         $userForAdminInfo = null;
 
-        if ($request->user()->hasRole('admin')){
+        if ($request->user()->hasRole('admin')) {
             $userForAdminInfo = User::where('email', $request->user()->id . $request->user()->email)->first();
-        }else{
+        } else {
             $userForAdminInfo = $request->user();
         }
 
@@ -139,7 +139,7 @@ class OrderController extends Controller
                 $resteUnites = 0;
             }
 
-            if ($newNbreUnites > 0) {
+            if ($newNbreUnites >= 0) {
                 // increment qte product
                 $product = Product::where('company_id', $id)->find($cart->id);
 
@@ -223,6 +223,8 @@ class OrderController extends Controller
 
         $id = $request->id ?? $request->user()->company_id;
 
+        // return [$request->id,$request->user()->company_id];
+
         if ($order->etat === 'PAYER') {
             return response([
                 'error' => "Cette commande a déjà été payé !"
@@ -253,7 +255,7 @@ class OrderController extends Controller
             ]);
         }
 
-        $total = $caisse->sum('montant');
+        $total = $caisse->montant;
 
         $caisse->update([
             'montant' => (int)$total + (int)implode('', explode('.', $order->cout))
@@ -338,10 +340,79 @@ class OrderController extends Controller
      * @param  \App\Models\Order  $order
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Order $order)
+    public function destroy(Request $request, Order $order)
     {
+        $id = $request->id ?? $request->user()->company_id;
+        $idUser = $request->user()->id;
+
         if ($order->statut !== 'PAYER') {
+            // on recupere tous les produits de la commandes
+            $orderProducts = OrderProduct::where('order_id', $order->id)->get();
+
+            foreach ($orderProducts as $op) {
+                $product = Product::find($op->product_id);
+
+                $newNbreParCarton = 0;
+
+                if ($product->productType->name === 'VENDU_PAR_KG') {
+                    $nbreUnites =  ((int)$product->qte_en_stock * (int)$product->poids) + (int)$product->unite_restante;
+                    $newNbreUnites = $nbreUnites + (int)$op->qte;
+                    $totalResteEntiere = intval($newNbreUnites / (int)$product->poids);
+                    $resteUnites = $newNbreUnites % (int)$product->poids;
+                    if ($op->type_de_vente === 'PIECE') {
+                        $resteUnites =  $nbreUnites %  (int)$product->poids;
+                    }
+                } else if ($product->productType->name === 'VENDU_PAR_LITRE') {
+                    $nbreUnites =  ($product->qte_en_stock * $product->qte_en_litre) + $product->unite_restante;
+                    $newNbreUnites = $nbreUnites + (int)$op->qte;
+                    $totalResteEntiere = intval($newNbreUnites / $product->qte_en_litre);
+                    $resteUnites = $newNbreUnites % $product->qte_en_litre;
+                    if ($op->type_de_vente === 'PIECE') {
+                        $resteUnites =  $nbreUnites %  $product->qte_en_litre;
+                    }
+                } else if ($product->productType->name === 'VENDU_PAR_NOMBRE_PAR_CONTENEUR') {
+                    $nbreUnites =  ($product->qte_en_stock * $product->nbre_par_carton) + $product->unite_restante;
+                    $newNbreUnites = $nbreUnites + (int)$op->qte;
+                    $totalResteEntiere = intval($newNbreUnites / $product->nbre_par_carton);
+                    $resteUnites = $newNbreUnites % $product->nbre_par_carton;
+                    if ($op->type_de_vente === 'PIECE') {
+                        $resteUnites =  $nbreUnites %  $product->nbre_par_carton;
+                    }
+                } else if ($product->productType->name === 'VENDU_PAR_PIECE') {
+                    $nbreUnites = $product->qte_en_stock + $product->unite_restante;
+                    $newNbreUnites = $nbreUnites + (int)$op->qte;
+                    $totalResteEntiere = $newNbreUnites;
+                    $resteUnites = 0;
+                }
+
+                if ($newNbreUnites >= 0) {
+                    // $product = Product::where('company_id', $id)->find($product->id);
+
+                    if ($op->type_de_vente === 'PIECE') {
+                        $totalResteEntiere = (int)$product->qte_en_stock + (int)$op->qte;
+                    }
+
+                    $product->update([
+                        'qte_en_stock' => $totalResteEntiere,
+                        'is_stock'     => $newNbreUnites > 0,
+                        'unite_restante' => $resteUnites
+                    ]);
+
+                    // new historic
+                    ProductHistory::create([
+                        'quantite'  => $op->qte,
+                        'type'      => 'ENTRÉE',
+                        'motif'     => 'Annulation d’une commande',
+                        'product_id' => $product->id,
+                        'user_id'   => $idUser,
+                        'is_unite'  => $op->type_de_vente === "DETAIL",
+                        'company_id' => $id
+                    ]);
+                }
+            }
+
             $order->delete();
+
             return response([
                 "message" => "Votre commande a été supprimé avec succès"
             ], 201);

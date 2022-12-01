@@ -404,8 +404,8 @@ class UserController extends Controller
 
         $user->attachRole('admin');
 
-        Mail::to($request->email)
-            ->send(new RegisterUserInfoMail($user, $request->password));
+        // Mail::to($request->email)
+        //     ->send(new RegisterUserInfoMail($user, $request->password));
 
         return response([
             'message' => 'Votre administrateur a été crée avec succès !'
