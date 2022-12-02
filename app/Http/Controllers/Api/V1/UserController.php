@@ -501,8 +501,8 @@ class UserController extends Controller
         
         foreach($roles as $r){
             $user->detachRole($r);
-        }
-        
+        } 
+         
         $user->attachRole($role);
 
         // Mail::to($request->email)
